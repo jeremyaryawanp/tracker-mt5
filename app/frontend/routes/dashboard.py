@@ -118,7 +118,7 @@ def charts(svc, rows, f, cur):
 
 
 def register(fh, settings):
-    @fh.route("/")
+    @fh.route("/", methods=["get"])
     def get(req, sess):
         with get_database().session() as db:
             user = current_user(db, settings, sess)
