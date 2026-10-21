@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.models import SymbolSpec, SyncRun, TradeDeal, TradeOrder, TradingAccount
 from app.models.enums import PipSource, SyncStatus
 from app.schemas.ingest import IngestBatch, IngestDeal, IngestResult
+from app.services.synchronization.positions import rebuild_positions
 from app.utils.symbols import base_symbol, classify, derive_pip
 from app.utils.timeconv import ServerOffsetUnknown, server_to_utc
 
@@ -174,14 +175,6 @@ def _store(session: Session, account: TradingAccount, batch: IngestBatch, run: S
     return touched
 
 
-def _rebuild(session: Session, account: TradingAccount, touched: set[str]) -> int:
-    try:
-        from app.services.synchronization.positions import rebuild_positions
-    except ImportError:  # pragma: no cover - positions module lands in TASK-004
-        return 0
-    return rebuild_positions(session, account, touched)
-
-
 def ingest_batch(
     session: Session, account: TradingAccount, batch: IngestBatch, *, retry_of_id: int | None = None
 ) -> SyncRun:
@@ -198,7 +191,7 @@ def ingest_batch(
         _upsert_symbols(session, account, batch)
         touched = _store(session, account, batch, run)
         session.flush()
-        run.positions_rebuilt = _rebuild(session, account, touched)
+        run.positions_rebuilt = rebuild_positions(session, account, touched)
         run.status = SyncStatus.SUCCESS
         run.finished_at = datetime.now(UTC)
         account.last_synced_at = run.finished_at
