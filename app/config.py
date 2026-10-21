@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     ingest_max_bytes: int = 10_000_000
     ingest_rate_limit_per_minute: int = 30
+    login_attempts_per_window: int = 5
 
     llm_reviews_enabled: bool = False
     llm_api_key: str = ""

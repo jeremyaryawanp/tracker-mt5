@@ -30,3 +30,33 @@ def new_token() -> str:
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+class RateLimiter:
+    """In-process sliding-window limiter (single-process deployment)."""
+
+    def __init__(self, limit: int, window_seconds: float):
+        import threading
+        from collections import defaultdict, deque
+
+        self.limit, self.window = limit, window_seconds
+        self._hits: defaultdict[str, deque[float]] = defaultdict(deque)
+        self._lock = threading.Lock()
+
+    def hit(self, key: str, now: float | None = None) -> bool:
+        """Record an attempt; return False when the key is over the limit."""
+        import time
+
+        now = time.monotonic() if now is None else now
+        with self._lock:
+            q = self._hits[key]
+            while q and now - q[0] >= self.window:
+                q.popleft()
+            if len(q) >= self.limit:
+                return False
+            q.append(now)
+            return True
+
+    def reset(self, key: str) -> None:
+        with self._lock:
+            self._hits.pop(key, None)

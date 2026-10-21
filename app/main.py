@@ -7,6 +7,8 @@ from app.config import Settings, get_settings
 from app.db import init_database, run_migrations
 from app.frontend.app import create_frontend
 from app.logging_config import configure_logging
+from app.middleware import SecurityMiddleware
+from app.security import RateLimiter
 from app.services.users import ensure_default_user
 
 SESSION_COOKIE = "tj_session"
@@ -31,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
     api.state.settings = settings
+    api.state.ingest_limiter = RateLimiter(settings.ingest_rate_limit_per_minute, 60)
     api.add_middleware(
         SessionMiddleware,
         secret_key=settings.app_secret_key,
@@ -39,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         same_site="lax",
         https_only=settings.app_env == "production",
     )
+    api.add_middleware(SecurityMiddleware)
     for router in (health.router, accounts.router, ingest.router, analytics.router,
                    trades.router, reviews.router):
         api.include_router(router, prefix="/api/v1")
