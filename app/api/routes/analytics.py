@@ -76,3 +76,16 @@ def breakdown(by: str = Query(pattern="^(symbol|session|direction|setup|emotion|
         else:
             out[currency] = metrics.hour_weekday_breakdowns(rows, svc.tz)[by]
     return jsonable_encoder(out)
+
+
+@router.get("/calendar")
+def calendar(month: str = Query(pattern=r"^\d{4}-\d{2}$"),
+             f: AnalyticsFilter = Depends(get_filter), svc: Analytics = Depends(_svc)):
+    from dataclasses import replace
+    from datetime import timedelta
+
+    from app.services.reporting.calendar import month_grid, parse_month, shift_month
+    first = parse_month(month, date(1970, 1, 1))
+    f = replace(f, date_from=first, date_to=shift_month(first, 1) - timedelta(days=1))
+    return jsonable_encoder({c: month_grid(rows, svc.tz, first, svc.week_start)
+                             for c, rows in svc.by_currency(svc.rows(f)).items()})
