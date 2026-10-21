@@ -7,6 +7,7 @@ from fasthtml.common import (
     Button,
     Div,
     Form,
+    Input,
     Label,
     Li,
     Option,
@@ -74,7 +75,8 @@ def register(fh, settings):
                     Option(a.account_name, value=str(a.id), selected=a.id == acc)
                     for a in list_accounts(db, user)], name="account_id", cls=INPUT,
                     onchange="this.form.submit()"),
-                    Input(type="hidden", name="week", value=str(start)), method="get", action="/review", cls="ml-auto"),
+                    Input(type="hidden", name="week", value=str(start)),
+                    method="get", action="/review", cls="ml-auto"),
                 cls="flex items-center gap-4")
             parts = [H1("Weekly review", cls="text-2xl font-semibold"), nav]
             for cur, d in data["by_currency"].items():
