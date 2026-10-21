@@ -19,7 +19,7 @@ Types: `money` = `Numeric(18,2)`, `price` = `Numeric(20,10)`, `volume` = `Numeri
 | account_currency | char(3) | |
 | account_type | enum `REAL`,`DEMO`,`CONTEST`,`UNKNOWN` | |
 | margin_mode | enum `HEDGING`,`NETTING`,`UNKNOWN` | MT5 only |
-| server_utc_offset_mode | enum `AUTO`,`FIXED`,`EET_DST` | how server time → UTC |
+| server_utc_offset_mode | enum `AUTO`,`FIXED`,`NY_CLOSE` | how server time → UTC (`NY_CLOSE` = New York time + 7h) |
 | server_utc_offset_minutes | int null | when FIXED |
 | initial_balance | money null | |
 | is_simulated | bool | true for mock data, shown in UI |
@@ -56,6 +56,11 @@ Unique: `(user_id, platform, login_hash)`.
 
 Unique: `(account_id, external_deal_id)`. Indexes: `(account_id, external_position_id)`, `(account_id, time_utc)`.
 Non-trade deals (balance, credit) are stored for balance series but excluded from trade analytics.
+
+### trade_order (raw)
+`account_id`, `external_order_id` (unique per account), `external_position_id`, `symbol`, `order_type`,
+`time_setup_utc`, `time_done_utc`, `volume_initial`, `price_open`, `sl_price`, `tp_price`, `raw_payload`.
+Used to obtain the SL/TP set on the order that opened a position.
 
 ### trade_position (derived, rebuildable)
 | column | notes |
@@ -99,7 +104,7 @@ Unique `(user_id, account_id, review_period, period_start)`.
 `account_id`, `source` (`MT5_COLLECTOR`,`MT4_EA`,`CSV`,`MOCK`), `started_at`, `finished_at`,
 `range_from`, `range_to`, `status` (`RUNNING`,`SUCCESS`,`FAILED`,`PARTIAL`), `deals_received`,
 `deals_inserted`, `deals_duplicate`, `positions_rebuilt`, `error_code`, `error_message` (sanitized),
-`retry_of_id`.
+`deals_updated`, `retry_of_id`, `failed_payload` (JSON batch kept only for failed runs so they can be retried).
 
 ## Idempotency
 
