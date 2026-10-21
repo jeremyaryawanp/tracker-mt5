@@ -1,7 +1,6 @@
-from fasthtml.common import H1, FastHTML, Link, P, Script
+from fasthtml.common import FastHTML, Link, Script
 
 from app.config import Settings
-from app.frontend.components import card, page
 
 TAILWIND_CDN = "https://cdn.tailwindcss.com"
 PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
@@ -26,12 +25,7 @@ def create_frontend(settings: Settings) -> FastHTML:
     )
     fh.state.settings = settings
 
-    @fh.route("/")
-    def get():
-        return page(
-            "Dashboard",
-            H1("TradeJournal AI", cls="text-2xl font-semibold"),
-            card(P("Backend foundation is running.", cls="text-slate-400")),
-        )
+    from app.frontend.routes import dashboard
 
+    dashboard.register(fh, settings)
     return fh
