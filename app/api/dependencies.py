@@ -53,6 +53,10 @@ def get_ingest_account(request: Request, db: Session = Depends(get_db)) -> Tradi
             "Invalid or revoked ingest token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    limiter = request.app.state.ingest_limiter
+    if not limiter.hit(f"account:{account.id}"):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Ingest rate limit exceeded",
+                            headers={"Retry-After": "60"})
     return account
 
 

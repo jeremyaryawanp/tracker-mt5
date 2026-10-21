@@ -8,8 +8,15 @@ This is an analytical tool only. It never places, modifies, or closes orders.
 
 ## Status
 
-TASK-001 (discovery and architecture) — documentation and project skeleton only. No application
-code runs yet. See [docs/requirements.md](docs/requirements.md) for the task plan.
+TASK-001 to TASK-010 implemented: MT5 collector, MT4 EA, CSV import, simulated demo data,
+deal→position reconciliation, tested analytics engine, dashboard, calendar, journal, pair/strategy
+analytics, weekly reviews, authentication and security hardening.
+
+```bash
+uv sync
+uv run uvicorn app.main:create_app --factory --port 8000   # http://127.0.0.1:8000
+# Accounts & Sync → "Load SIMULATED demo account" to explore without a broker.
+```
 
 ## Documentation
 
@@ -21,8 +28,10 @@ code runs yet. See [docs/requirements.md](docs/requirements.md) for the task pla
 | [metatrader-integration.md](docs/metatrader-integration.md) | MT5/MT4 options, limitations, sync design |
 | [analytics-definitions.md](docs/analytics-definitions.md) | Metric formulas, edge cases, limitations |
 
-`api-reference.md`, `setup-guide.md`, `testing-guide.md`, and `deployment-guide.md` are written in
-the tasks that introduce the corresponding functionality.
+| [setup-guide.md](docs/setup-guide.md) | Local and Docker setup, authentication |
+| [api-reference.md](docs/api-reference.md) | REST endpoints (live OpenAPI at `/api/docs`) |
+| [testing-guide.md](docs/testing-guide.md) | Test layout and how to run checks |
+| [deployment-guide.md](docs/deployment-guide.md) | Production deployment, security, backups |
 
 ## Prerequisites (first prototype)
 
@@ -31,9 +40,9 @@ the tasks that introduce the corresponding functionality.
 - For live MT5 import: Windows (PC or VPS) running the MT5 desktop terminal, logged in to the account
 - For MT4 import: MT4 terminal with permission to attach an Expert Advisor
 
-## Quick check
+## Checks
 
 ```bash
-uv sync
 uv run ruff check .
+uv run pytest
 ```

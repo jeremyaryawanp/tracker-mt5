@@ -25,9 +25,11 @@ def create_frontend(settings: Settings) -> FastHTML:
     )
     fh.state.settings = settings
 
-    from app.frontend.routes import calendar, dashboard, journal, review
+    from app.frontend.routes import accounts, auth, calendar, dashboard, journal, review
 
+    auth.register(fh, settings)
     dashboard.register(fh, settings)
+    accounts.register(fh, settings)
     calendar.register(fh, settings)
     journal.register(fh, settings)
     review.register(fh, settings)
