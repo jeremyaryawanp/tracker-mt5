@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, get_db, get_owned_account
 from app.integrations.csv.adapter import CsvImportError, csv_to_batch
-from app.integrations.mock.adapter import MockAdapter
 from app.models import SyncRun, TradingAccount, User
 from app.models.enums import Platform, ServerOffsetMode
 from app.schemas.accounts import (
@@ -17,6 +16,8 @@ from app.schemas.accounts import (
 from app.schemas.ingest import IngestResult
 from app.services import accounts as svc
 from app.services.synchronization.ingest import ingest_batch, result_of
+from app.services.synchronization.positions import rebuild_account
+from app.services.synchronization.reconcile import RetryNotPossible, reconcile, retry_sync_run
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 MAX_CSV_BYTES = 5_000_000
@@ -103,5 +104,26 @@ async def import_csv(
     return result_of(ingest_batch(db, account, batch))
 
 
-def demo_adapter(seed: int) -> MockAdapter:
-    return MockAdapter(seed=seed)
+@router.post("/{account_id}/sync-runs/{run_id}/retry", response_model=IngestResult)
+def retry_run(run_id: int, account: TradingAccount = Depends(get_owned_account),
+              db: Session = Depends(get_db)):
+    try:
+        run = retry_sync_run(db, account, run_id)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except RetryNotPossible as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return result_of(run)
+
+
+@router.post("/{account_id}/rebuild")
+def rebuild(account: TradingAccount = Depends(get_owned_account), db: Session = Depends(get_db)):
+    count = rebuild_account(db, account)
+    db.commit()
+    return {"positions_rebuilt": count, "reconciliation": reconcile(db, account)}
+
+
+@router.get("/{account_id}/reconciliation")
+def reconciliation(account: TradingAccount = Depends(get_owned_account),
+                   db: Session = Depends(get_db)):
+    return reconcile(db, account)
