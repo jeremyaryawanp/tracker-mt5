@@ -35,7 +35,7 @@ def trade_table(rows, tz):
 
 
 def register(fh, settings):
-    @fh.route("/calendar")
+    @fh.route("/calendar", methods=["get"])
     def get(req, sess):
         with get_database().session() as db:
             user = current_user(db, settings, sess)
@@ -103,7 +103,7 @@ def register(fh, settings):
             parts.append(Div(id="day-detail"))
             return page("Calendar", *parts, active="/calendar", user=user.username)
 
-    @fh.route("/calendar/day/{day}")
+    @fh.route("/calendar/day/{day}", methods=["get"])
     def get_day(day: str, req, sess):
         with get_database().session() as db:
             user = current_user(db, settings, sess)

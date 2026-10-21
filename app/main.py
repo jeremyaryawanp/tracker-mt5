@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
 from app import __version__
-from app.api.routes import accounts, analytics, health, ingest
+from app.api.routes import accounts, analytics, health, ingest, trades
 from app.config import Settings, get_settings
 from app.db import init_database, run_migrations
 from app.frontend.app import create_frontend
@@ -39,7 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         same_site="lax",
         https_only=settings.app_env == "production",
     )
-    for router in (health.router, accounts.router, ingest.router, analytics.router):
+    for router in (health.router, accounts.router, ingest.router, analytics.router,
+                   trades.router):
         api.include_router(router, prefix="/api/v1")
     api.mount("/", create_frontend(settings))
     return api
