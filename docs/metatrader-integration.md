@@ -92,3 +92,37 @@ Decimal values are strings to avoid float rounding.
 Generates a deterministic, seeded dataset (multiple symbols, partial closes, breakevens, commissions,
 swaps, missing SL/TP, midnight-crossing trades). Accounts created from it have `is_simulated = true`
 and the UI shows a "Simulated data" badge.
+
+## Running the integrations (implemented in TASK-003)
+
+### Create an account and token
+`POST /api/v1/accounts` (or the Accounts page) with `account_name`, `platform` (`MT5`/`MT4`/`CSV`)
+and the server-time mode (`AUTO`, `FIXED` + `server_utc_offset_minutes`, or `NY_CLOSE`). The
+response contains `ingest_token` **once**; `POST /api/v1/accounts/{id}/token` rotates it and
+revokes the old one. Tokens are stored as SHA-256 hashes.
+
+### MT5 collector (Windows, next to the terminal)
+```powershell
+git clone https://github.com/jeremyaryawanp/tracker-mt5; cd tracker-mt5
+py -3.12 -m pip install -e ".[collector]"
+$env:TJ_URL = "http://<web-app-host>:8000"; $env:TJ_TOKEN = "<ingest token>"
+py -m collector.mt5_collector --days 365         # backfill once
+py -m collector.mt5_collector --loop 300         # incremental every 5 min (2-day overlap)
+```
+The broker offset is auto-detected from the latest tick (only while the market is open);
+pass `--offset-minutes 120` or configure `FIXED`/`NY_CLOSE` on the account otherwise. A batch
+with an unknown offset is rejected with `SERVER_OFFSET_UNKNOWN` and logged as a failed sync run.
+
+### MT4 EA
+Copy `collector/mt4/TradeJournalExporter.mq4` to `MQL4/Experts`, compile, allow WebRequest for
+the app URL, set `InpUrl` to `http://<host>:8000/api/v1/ingest/mt4` and `InpToken`. Optionally
+`InpWriteCsv=true` writes `MQL4/Files/tradejournal_history.csv` for the CSV import.
+
+### CSV import
+`POST /api/v1/accounts/{id}/import/csv` (multipart `file`, optional `server_utc_offset_minutes`).
+Columns (case-insensitive, aliases accepted): `ticket,symbol,type,volume,open_time,open_price,
+close_time,close_price,sl,tp,commission,swap,profit,comment`.
+
+### Simulated data
+`POST /api/v1/accounts/demo?seed=42` creates an account flagged `is_simulated` from
+`MockAdapter` (deterministic per seed). It is labelled as simulated everywhere in the UI.
